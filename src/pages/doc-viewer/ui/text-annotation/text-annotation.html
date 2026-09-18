@@ -1,0 +1,48 @@
+<div
+  class="annotation-container"
+  [class.is-editing-mode]="isEditing()"
+  role="note"
+  aria-label="Текстовая аннотация"
+  tabindex="0"
+  (keydown.enter)="startEdit($event)"
+>
+  @if (isEditing()) {
+  <input
+    #editInput
+    type="text"
+    [(ngModel)]="editableText"
+    (blur)="saveEdit()"
+    (keydown)="onKeyDown($event)"
+    (mousedown)="$event.stopPropagation()"
+    class="annotation-input"
+    aria-label="Редактирование текста аннотации"
+  />
+  } @else {
+  <div
+    class="text-content"
+    (dblclick)="startEdit($event)"
+    title="Дважды кликните для редактирования"
+  >
+    {{ content() }}
+  </div>
+  }
+
+  <button
+    class="btn-delete-annotation"
+    (click)="$event.stopPropagation(); delete.emit()"
+    aria-label="Удалить аннотацию"
+  >
+    <svg
+      viewBox="0 0 24 24"
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.5"
+      aria-hidden="true"
+    >
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </button>
+</div>
