@@ -1,0 +1,26 @@
+<header class="toolbar">
+  <h1 class="toolbar__title">{{ documentName() || 'Загрузка...' }}</h1>
+
+  <div class="toolbar__zoom zoom">
+    <span class="zoom__indicator" aria-live="polite" aria-atomic="true">
+      Масштаб: {{ zoom() }}%
+    </span>
+    <button
+      class="zoom__control"
+      (click)="zoomOut.emit()"
+      aria-label="Уменьшить масштаб"
+      [disabled]="zoom() <= 50"
+    >
+      -
+    </button>
+    <button
+      class="zoom__control"
+      (click)="zoomIn.emit()"
+      aria-label="Увеличить масштаб"
+      [disabled]="zoom() >= 200"
+    >
+      +
+    </button>
+    <button class="zoom__save" (click)="save.emit()" aria-label="Сохранить изменения">Save</button>
+  </div>
+</header>

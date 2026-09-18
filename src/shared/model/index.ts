@@ -1,1 +1,1 @@
-export type { Document } from './types';
+export type { Document, Annotation, DocumentPage, ViewerState } from './types';
