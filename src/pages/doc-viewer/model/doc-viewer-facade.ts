@@ -1,5 +1,5 @@
 import { Service, computed, signal } from '@angular/core';
-import { Annotation, DocumentPage, ViewerState } from '../../../shared/model';
+import { Annotation, DocumentPage, ViewerState } from '@shared/model';
 
 const INITIAL_STATE: ViewerState = {
   documentName: null,
