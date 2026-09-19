@@ -8,7 +8,7 @@ import { isEnterKey, isEscKey } from '@shared/lib';
   templateUrl: './text-annotation.html',
   styleUrls: ['./text-annotation.scss'],
 })
-export class TextAnnotationComponent {
+export class TextAnnotation {
   public content = input.required<string>();
 
   public delete = output();
@@ -19,7 +19,7 @@ export class TextAnnotationComponent {
 
   private readonly editInput = viewChild<ElementRef<HTMLInputElement>>('editInput');
 
-  private constructor() {
+  public constructor() {
     effect(() => {
       if (this.isEditing()) {
         const inputEl = this.editInput();
@@ -30,14 +30,20 @@ export class TextAnnotationComponent {
     });
   }
 
-  protected startEdit(event: Event): void {
-    event.stopPropagation();
+  protected startEdit(evt: Event): void {
+    if (this.isEditing()) {
+      return;
+    }
+
+    evt.stopPropagation();
     this.editableText.set(this.content());
     this.isEditing.set(true);
   }
 
   protected saveEdit(): void {
-    if (!this.isEditing()) return;
+    if (!this.isEditing()) {
+      return;
+    }
 
     const trimmed = this.editableText().trim();
     if (trimmed && trimmed !== this.content()) {
@@ -46,11 +52,19 @@ export class TextAnnotationComponent {
     this.isEditing.set(false);
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
-    if (isEnterKey(event.key)) {
+  protected onKeyDown(evt: KeyboardEvent): void {
+    if (isEnterKey(evt.key)) {
+      evt.stopPropagation();
+      evt.preventDefault();
       this.saveEdit();
-    } else if (isEscKey(event.key)) {
+    } else if (isEscKey(evt.key)) {
+      evt.stopPropagation();
       this.isEditing.set(false);
     }
+  }
+
+  protected onDeleteClick(evt: Event): void {
+    evt.preventDefault();
+    this.delete.emit();
   }
 }

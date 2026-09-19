@@ -1,1 +1,1 @@
-export { DocViewer } from './ui/doc-viewer';
+export { DocViewerPage } from './ui/doc-viewer';

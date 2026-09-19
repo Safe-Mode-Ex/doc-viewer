@@ -5,9 +5,9 @@ import { Component, input, output } from '@angular/core';
   templateUrl: './toolbar.html',
   styleUrls: ['./toolbar.scss'],
 })
-export class ToolbarComponent {
-  protected documentName = input.required<string | null>();
-  protected zoom = input.required<number>();
+export class Toolbar {
+  public documentName = input.required<string | null>();
+  public zoom = input.required<number>();
 
   protected zoomIn = output();
   protected zoomOut = output();

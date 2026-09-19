@@ -5,6 +5,7 @@ import { fromEvent, merge, animationFrameScheduler } from 'rxjs';
 import { map, switchMap, takeUntil, finalize, observeOn, filter } from 'rxjs/operators';
 
 const PIXELS_PER_STEP = 8;
+const DRAG_THRESHOLD_PX = 5;
 
 export interface DragPosition {
   xPercent: number;
@@ -52,12 +53,6 @@ export class DraggableDirective implements OnInit {
       .pipe(
         filter(() => !isDragging),
         map((startEvent) => {
-          startEvent.preventDefault();
-          isDragging = true;
-
-          el.setPointerCapture(startEvent.pointerId);
-          el.style.willChange = 'left, top';
-
           const parent = el.parentElement;
           const parentRect = parent?.getBoundingClientRect();
           const parentWidth = parentRect?.width ?? 1;
@@ -100,12 +95,32 @@ export class DraggableDirective implements OnInit {
           }) => {
             let finalXPercent = initialLeftPercent;
             let finalYPercent = initialTopPercent;
+            let dragStarted = false;
+
+            const startDrag = () => {
+              if (dragStarted) return;
+
+              dragStarted = true;
+              isDragging = true;
+              el.style.willChange = 'left, top';
+              el.style.userSelect = 'none';
+
+              if (!el.hasPointerCapture(pointerId)) {
+                el.setPointerCapture(pointerId);
+              }
+            };
 
             return pointermove$.pipe(
               observeOn(animationFrameScheduler),
               map((moveEvent) => {
                 const deltaXPixels = moveEvent.clientX - startX;
                 const deltaYPixels = moveEvent.clientY - startY;
+
+                if (!dragStarted && Math.hypot(deltaXPixels, deltaYPixels) >= DRAG_THRESHOLD_PX) {
+                  startDrag();
+                }
+
+                if (!dragStarted) return;
 
                 const deltaXPercent = (deltaXPixels / parentWidth) * 100;
                 const deltaYPercent = (deltaYPixels / parentHeight) * 100;
@@ -132,9 +147,15 @@ export class DraggableDirective implements OnInit {
               finalize(() => {
                 isDragging = false;
                 el.style.willChange = 'auto';
+                el.style.userSelect = '';
 
-                el.releasePointerCapture(pointerId);
-                this.dragEnd.emit({ xPercent: finalXPercent, yPercent: finalYPercent });
+                if (el.hasPointerCapture(pointerId)) {
+                  el.releasePointerCapture(pointerId);
+                }
+
+                if (dragStarted) {
+                  this.dragEnd.emit({ xPercent: finalXPercent, yPercent: finalYPercent });
+                }
               }),
             );
           },

@@ -1,5 +1,5 @@
 <div
-  class="annotation-container"
+  class="annotation"
   [class.is-editing-mode]="isEditing()"
   role="note"
   aria-label="Текстовая аннотация"
@@ -14,12 +14,12 @@
     (blur)="saveEdit()"
     (keydown)="onKeyDown($event)"
     (mousedown)="$event.stopPropagation()"
-    class="annotation-input"
+    class="annotation__input"
     aria-label="Редактирование текста аннотации"
   />
   } @else {
   <div
-    class="text-content"
+    class="annotation__content"
     (dblclick)="startEdit($event)"
     title="Дважды кликните для редактирования"
   >
@@ -27,11 +27,7 @@
   </div>
   }
 
-  <button
-    class="btn-delete-annotation"
-    (click)="$event.stopPropagation(); delete.emit()"
-    aria-label="Удалить аннотацию"
-  >
+  <button class="btn btn--delete" (click)="onDeleteClick($event)" aria-label="Удалить аннотацию">
     <svg
       viewBox="0 0 24 24"
       width="14"

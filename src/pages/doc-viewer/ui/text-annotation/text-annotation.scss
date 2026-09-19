@@ -1,0 +1,72 @@
+.annotation {
+  position: relative;
+  box-sizing: border-box;
+  border: 1px solid #e6db55;
+  border-radius: 4px;
+  padding: 8px 28px 8px 12px;
+  min-width: 130px;
+  max-width: 260px;
+  background-color: #fffbcc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  user-select: none;
+
+  &:focus-visible {
+    outline: 2px solid #008080;
+    outline-offset: 2px;
+  }
+}
+
+.annotation {
+  &.is-editing-mode {
+    border-color: #008080;
+    padding: 4px 28px 4px 6px;
+    background-color: #ffffff;
+  }
+}
+
+.annotation__content {
+  color: #333333;
+  font-size: 13px;
+  line-height: 1.4;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.annotation__input {
+  display: block;
+  border: none;
+  outline: none;
+  padding: 4px;
+  width: 100%;
+  background-color: transparent;
+  color: #333333;
+  font-size: 13px;
+}
+
+.btn {
+  display: flex;
+  position: absolute;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+
+  &--delete {
+    top: -8px;
+    left: -8px;
+    transition: opacity 0.15s ease;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    background-color: #000000;
+    color: #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    opacity: 0.8;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
