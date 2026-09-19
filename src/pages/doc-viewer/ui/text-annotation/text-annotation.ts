@@ -8,7 +8,7 @@ import { isEnterKey, isEscKey } from '@shared/lib';
   templateUrl: './text-annotation.html',
   styleUrls: ['./text-annotation.scss'],
 })
-export class TextAnnotationComponent {
+export class TextAnnotation {
   public content = input.required<string>();
 
   public delete = output();
@@ -19,7 +19,7 @@ export class TextAnnotationComponent {
 
   private readonly editInput = viewChild<ElementRef<HTMLInputElement>>('editInput');
 
-  private constructor() {
+  public constructor() {
     effect(() => {
       if (this.isEditing()) {
         const inputEl = this.editInput();
