@@ -1,0 +1,73 @@
+.toolbar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  padding: 0 24px;
+  background-color: #008080;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+}
+
+.toolbar__title {
+  margin: 0;
+  color: #ffffff;
+  font-size: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.zoom {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.zoom__indicator {
+  color: #ffffff;
+  font-weight: bold;
+  font-family: sans-serif;
+}
+
+.zoom__control {
+  padding: 4px 14px;
+  border: 1px solid #ffffff;
+  border-radius: 4px;
+  background-color: transparent;
+  color: #ffffff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.zoom__control {
+  &:hover {
+    &:not(:disabled) {
+      background-color: rgba(255, 255, 255, 0.15);
+    }
+  }
+}
+
+.zoom__control {
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.zoom__save {
+  padding: 6px 20px;
+  border: none;
+  border-radius: 4px;
+  background-color: #ffffff;
+  color: #008080;
+  font-weight: bold;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.zoom__save {
+  &:hover {
+    opacity: 0.9;
+  }
+}

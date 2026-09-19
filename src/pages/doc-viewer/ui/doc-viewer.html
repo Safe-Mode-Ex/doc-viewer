@@ -14,45 +14,41 @@
   </app-toolbar>
 
   <main class="viewer__viewport" role="document" aria-label="Просмотрщик документа">
-    <div
-      class="viewer__document document"
-      [style.width.%]="facade.zoom()"
-      [style.transform]="'scale(' + tempScale() + ')'"
-      [class.is-zooming]="isZooming()"
-    >
-      @for (page of facade.pages(); track page.imageUrl) {
-      <section class="document__page" [attr.aria-label]="'Страница ' + page.number">
-        <img
-          [src]="page.imageUrl"
-          [attr.alt]="'Изображение страницы ' + page.number"
-          class="page-image"
-        />
-        <div
-          class="document__annotations"
-          (click)="promptNewAnnotation(page.number, $event)"
-          [style.pointer-events]="isZooming() ? 'none' : 'auto'"
-          role="region"
-          [attr.aria-label]="'Аннотации к странице ' + page.number"
-        >
-          @for (annotation of facade.annotations(); track annotation.id) { @if
-          (annotation.pageNumber === page.number) {
+    <div class="viewer__document document">
+      <div class="document__container" [style.width.%]="facade.zoom()">
+        @for (page of facade.pages(); track page.imageUrl) {
+        <section class="document__page page" [attr.aria-label]="'Страница ' + page.number">
+          <img
+            [src]="page.imageUrl"
+            [attr.alt]="'Изображение страницы ' + page.number"
+            class="page__image"
+          />
           <div
-            appDraggable
-            (dragEnd)="facade.updateAnnotationPosition(annotation.id, $event.xPercent, $event.yPercent)"
-            [style.left.%]="annotation.x"
-            [style.top.%]="annotation.y"
-            class="draggable"
+            class="page__annotations"
+            (click)="promptNewAnnotation(page.number, $event)"
+            role="region"
+            [attr.aria-label]="'Аннотации к странице ' + page.number"
           >
-            <app-text-annotation
-              [content]="annotation.content"
-              (delete)="facade.deleteAnnotation(annotation.id)"
-              (updateContent)="facade.updateAnnotationContent(annotation.id, $event)"
-            ></app-text-annotation>
+            @for (annotation of facade.annotations(); track annotation.id) { @if
+            (annotation.pageNumber === page.number) {
+            <div
+              appDraggable
+              (dragEnd)="facade.updateAnnotationPosition(annotation.id, $event.xPercent, $event.yPercent)"
+              [style.left.%]="annotation.x"
+              [style.top.%]="annotation.y"
+              class="draggable"
+            >
+              <app-text-annotation
+                [content]="annotation.content"
+                (delete)="facade.deleteAnnotation(annotation.id)"
+                (updateContent)="facade.updateAnnotationContent(annotation.id, $event)"
+              ></app-text-annotation>
+            </div>
+            } }
           </div>
-          } }
-        </div>
-      </section>
-      }
+        </section>
+        }
+      </div>
     </div>
   </main>
 </div>
