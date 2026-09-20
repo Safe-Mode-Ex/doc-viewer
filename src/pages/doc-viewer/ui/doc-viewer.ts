@@ -43,6 +43,10 @@ export class DocViewer {
 
   public constructor() {
     effect(() => {
+      if (this.documentLoader.isLoading() || this.documentLoader.error()) {
+        return;
+      }
+
       const doc = this.documentLoader.value();
 
       if (doc) {
