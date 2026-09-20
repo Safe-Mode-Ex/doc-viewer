@@ -198,7 +198,8 @@ describe('DocViewer', () => {
       await flushChanges();
 
       const content = elementByCss('.annotation__content');
-      content.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      content.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      content.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       fixture.detectChanges();
 
       const input = elementByCss('.annotation__input') as HTMLInputElement;
@@ -260,7 +261,9 @@ describe('DocViewer', () => {
       await createFixture();
       const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('Ввод с клавиатуры');
 
-      annotationsRegion().dispatchEvent(new KeyboardEvent('keydown', { key: Key.ENTER, bubbles: true }));
+      annotationsRegion().dispatchEvent(
+        new KeyboardEvent('keydown', { key: Key.ENTER, bubbles: true }),
+      );
 
       expect(promptSpy).toHaveBeenCalledOnce();
       expect(facadeOf(component).annotations()).toHaveLength(1);
@@ -271,7 +274,9 @@ describe('DocViewer', () => {
       await createFixture();
       const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue(null);
 
-      annotationsRegion().dispatchEvent(new KeyboardEvent('keydown', { key: Key.SPACE, bubbles: true }));
+      annotationsRegion().dispatchEvent(
+        new KeyboardEvent('keydown', { key: Key.SPACE, bubbles: true }),
+      );
 
       expect(promptSpy).toHaveBeenCalledOnce();
     });
@@ -307,7 +312,7 @@ describe('DocViewer', () => {
       facadeOf(component).addTextAnnotation(1, 'Старый текст');
       await flushChanges();
 
-      elementByCss('.annotation__content').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      doubleTapOn('.annotation__content');
       fixture.detectChanges();
 
       const input = elementByCss('.annotation__input') as HTMLInputElement;
@@ -326,7 +331,7 @@ describe('DocViewer', () => {
       facadeOf(component).addTextAnnotation(1, 'Старый текст');
       await flushChanges();
 
-      elementByCss('.annotation__content').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      doubleTapOn('.annotation__content');
       fixture.detectChanges();
 
       const input = elementByCss('.annotation__input') as HTMLInputElement;
@@ -345,7 +350,7 @@ describe('DocViewer', () => {
       facadeOf(component).addTextAnnotation(1, 'Тест');
       await flushChanges();
 
-      elementByCss('.annotation__content').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      doubleTapOn('.annotation__content');
       fixture.detectChanges();
 
       const input = elementByCss('.annotation__input') as HTMLInputElement;
@@ -360,7 +365,7 @@ describe('DocViewer', () => {
       facadeOf(component).addTextAnnotation(1, 'Тест');
       await flushChanges();
 
-      elementByCss('.annotation__content').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      doubleTapOn('.annotation__content');
       fixture.detectChanges();
 
       const input = elementByCss('.annotation__input') as HTMLInputElement;
@@ -406,6 +411,12 @@ describe('DocViewer', () => {
 
   function elementByCss(selector: string): HTMLElement {
     return fixture.debugElement.query(By.css(selector)).nativeElement as HTMLElement;
+  }
+
+  function doubleTapOn(selector: string): void {
+    const target = elementByCss(selector);
+    target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   }
 
   function facadeOf(viewer: DocViewer): DocViewerFacade {
