@@ -3,9 +3,11 @@ import { DOCUMENT } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { fromEvent, merge, animationFrameScheduler } from 'rxjs';
 import { map, switchMap, takeUntil, finalize, auditTime, filter } from 'rxjs/operators';
-import { DRAG_THRESHOLD_PX, PIXELS_PER_STEP } from './const';
-import { clampPercent, toPercent, percentToPixels } from './math';
-import { DragPosition, DragMetrics } from './types';
+import { PIXELS_PER_STEP } from './const';
+import { clampPercent, toPercent } from './math';
+import { DragGesture } from './drag-gesture';
+import { measureElement } from './measure';
+import { DragPosition } from './types';
 import { Key } from '../keyboard/enums';
 
 @Directive({
@@ -57,50 +59,15 @@ export class DraggableDirective implements OnInit {
           startX: startEvent.clientX,
           startY: startEvent.clientY,
           pointerId: startEvent.pointerId,
-          metrics: this.measure(el),
         })),
-        switchMap(({ startX, startY, pointerId, metrics }) => {
-          const {
-            parentWidth,
-            parentHeight,
-            leftPercent,
-            topPercent,
-            elementWidthPercent,
-            elementHeightPercent,
-          } = metrics;
-
-          let finalXPercent = leftPercent;
-          let finalYPercent = topPercent;
-          let dragStarted = false;
-
-          const startDrag = () => {
-            if (dragStarted) return;
-            dragStarted = true;
-            this.startPointerDrag(el, pointerId);
-          };
+        switchMap(({ startX, startY, pointerId }) => {
+          const gesture = DragGesture.create(el, startX, startY, pointerId, () => {
+            gesture.start(el);
+            this.isDragging = true;
+          });
 
           return pointermove$.pipe(
-            map((moveEvent) => {
-              const deltaXPixels = moveEvent.clientX - startX;
-              const deltaYPixels = moveEvent.clientY - startY;
-
-              if (!dragStarted && Math.hypot(deltaXPixels, deltaYPixels) >= DRAG_THRESHOLD_PX) {
-                startDrag();
-              }
-
-              if (!dragStarted) return null;
-
-              const deltaXPercent = toPercent(deltaXPixels, parentWidth);
-              const deltaYPercent = toPercent(deltaYPixels, parentHeight);
-
-              finalXPercent = clampPercent(leftPercent + deltaXPercent, elementWidthPercent);
-              finalYPercent = clampPercent(topPercent + deltaYPercent, elementHeightPercent);
-
-              const translateX = percentToPixels(finalXPercent - leftPercent, parentWidth);
-              const translateY = percentToPixels(finalYPercent - topPercent, parentHeight);
-
-              return `translate(${translateX.toString()}px, ${translateY.toString()}px)`;
-            }),
+            map((moveEvent) => gesture.toTransform(moveEvent.clientX, moveEvent.clientY)),
             filter((value): value is string => value !== null),
             auditTime(0, animationFrameScheduler),
             map((transformString) => {
@@ -108,10 +75,12 @@ export class DraggableDirective implements OnInit {
             }),
             takeUntil(merge(pointerup$, pointercancel$, lostpointercapture$)),
             finalize(() => {
-              this.finishPointerDrag(el, pointerId);
+              gesture.finish(el);
+              this.isDragging = false;
 
-              if (dragStarted) {
-                this.applyPosition(el, finalXPercent, finalYPercent);
+              if (gesture.hasDragged) {
+                const { xPercent, yPercent } = gesture.position();
+                this.applyPosition(el, xPercent, yPercent);
               }
             }),
           );
@@ -156,7 +125,7 @@ export class DraggableDirective implements OnInit {
       topPercent,
       elementWidthPercent,
       elementHeightPercent,
-    } = this.measure(el);
+    } = measureElement(el);
 
     const stepXPercent = toPercent(PIXELS_PER_STEP, parentWidth);
     const stepYPercent = toPercent(PIXELS_PER_STEP, parentHeight);
@@ -185,47 +154,6 @@ export class DraggableDirective implements OnInit {
 
     if (newLeft !== leftPercent || newTop !== topPercent) {
       this.applyPosition(el, newLeft, newTop);
-    }
-  }
-
-  private measure(el: HTMLElement): DragMetrics {
-    const parent = el.parentElement;
-    const parentRect = parent?.getBoundingClientRect();
-    const parentWidth = parentRect?.width ?? 1;
-    const parentHeight = parentRect?.height ?? 1;
-
-    const currentRect = el.getBoundingClientRect();
-    const leftPercent = parentRect ? toPercent(currentRect.left - parentRect.left, parentWidth) : 0;
-    const topPercent = parentRect ? toPercent(currentRect.top - parentRect.top, parentHeight) : 0;
-
-    return {
-      parentWidth,
-      parentHeight,
-      leftPercent,
-      topPercent,
-      elementWidthPercent: toPercent(el.offsetWidth, parentWidth),
-      elementHeightPercent: toPercent(el.offsetHeight, parentHeight),
-    };
-  }
-
-  private startPointerDrag(el: HTMLElement, pointerId: number): void {
-    this.isDragging = true;
-    el.style.willChange = 'transform';
-    el.style.userSelect = 'none';
-
-    if (!el.hasPointerCapture(pointerId)) {
-      el.setPointerCapture(pointerId);
-    }
-  }
-
-  private finishPointerDrag(el: HTMLElement, pointerId: number): void {
-    this.isDragging = false;
-    el.style.willChange = 'auto';
-    el.style.userSelect = '';
-    el.style.transform = '';
-
-    if (el.hasPointerCapture(pointerId)) {
-      el.releasePointerCapture(pointerId);
     }
   }
 
