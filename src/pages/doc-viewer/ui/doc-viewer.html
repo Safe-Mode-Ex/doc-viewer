@@ -7,8 +7,8 @@
   <app-toolbar
     [documentName]="facade.documentName()"
     [zoom]="facade.zoom()"
-    (zoomIn)="changeZoom('in')"
-    (zoomOut)="changeZoom('out')"
+    (zoomIn)="facade.zoomIn()"
+    (zoomOut)="facade.zoomOut()"
     (save)="facade.saveAndExport()"
   >
   </app-toolbar>
@@ -16,20 +16,16 @@
   <main class="viewer__viewport" role="document" aria-label="Просмотрщик документа">
     <div class="viewer__document document">
       <div class="document__container" [style.width.%]="facade.zoom()">
-        @for (page of facade.pages(); track page.imageUrl) {
-        <section class="document__page page" [attr.aria-label]="'Страница ' + page.number">
-          <img
-            [src]="page.imageUrl"
-            [attr.alt]="'Изображение страницы ' + page.number"
-            class="page__image"
-          />
+        @for (page of pages(); track page.imageUrl) {
+        <section class="document__page page" [attr.aria-label]="page.label">
+          <img [src]="page.imageUrl" [attr.alt]="page.imageAlt" class="page__image" />
           <div
             class="page__annotations"
             (click)="promptNewAnnotation(page.number, $event)"
             (keydown)="promptNewAnnotationByKey(page.number, $event)"
             role="region"
             tabindex="0"
-            [attr.aria-label]="'Аннотации к странице ' + page.number"
+            [attr.aria-label]="page.annotationsLabel"
           >
             @for (annotation of facade.annotations(); track annotation.id) { @if
             (annotation.pageNumber === page.number) {
