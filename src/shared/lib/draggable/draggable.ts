@@ -2,22 +2,16 @@ import { Directive, ElementRef, inject, output, OnInit, DestroyRef } from '@angu
 import { DOCUMENT } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { fromEvent, merge, animationFrameScheduler } from 'rxjs';
-import { map, switchMap, takeUntil, finalize, observeOn, filter } from 'rxjs/operators';
-
-const PIXELS_PER_STEP = 8;
-const DRAG_THRESHOLD_PX = 5;
-
-export interface DragPosition {
-  xPercent: number;
-  yPercent: number;
-}
+import { map, switchMap, takeUntil, finalize, auditTime, filter } from 'rxjs/operators';
+import { DRAG_THRESHOLD_PX, PIXELS_PER_STEP } from './const';
+import { DragPosition } from './types';
 
 @Directive({
   selector: '[appDraggable]',
   host: {
     '[attr.tabindex]': '0',
     '[attr.role]': '"slider"',
-    '[attr.aria-label]': '"Интерфейс перетаскиваемой аннотации"',
+    '[attr.aria-label]': '"Интерфейс перетаскиваемого элемента"',
     '[style.touch-action]': '"none"',
   },
 })
@@ -102,7 +96,7 @@ export class DraggableDirective implements OnInit {
 
               dragStarted = true;
               isDragging = true;
-              el.style.willChange = 'left, top';
+              el.style.willChange = 'transform';
               el.style.userSelect = 'none';
 
               if (!el.hasPointerCapture(pointerId)) {
@@ -111,7 +105,6 @@ export class DraggableDirective implements OnInit {
             };
 
             return pointermove$.pipe(
-              observeOn(animationFrameScheduler),
               map((moveEvent) => {
                 const deltaXPixels = moveEvent.clientX - startX;
                 const deltaYPixels = moveEvent.clientY - startY;
@@ -120,7 +113,7 @@ export class DraggableDirective implements OnInit {
                   startDrag();
                 }
 
-                if (!dragStarted) return;
+                if (!dragStarted) return null;
 
                 const deltaXPercent = (deltaXPixels / parentWidth) * 100;
                 const deltaYPercent = (deltaYPixels / parentHeight) * 100;
@@ -134,20 +127,25 @@ export class DraggableDirective implements OnInit {
                   Math.min(100 - elementHeightPercent, initialTopPercent + deltaYPercent),
                 );
 
-                el.style.left = `${finalXPercent.toString()}%`;
-                el.style.top = `${finalYPercent.toString()}%`;
+                const translateX = ((finalXPercent - initialLeftPercent) / 100) * parentWidth;
+                const translateY = ((finalYPercent - initialTopPercent) / 100) * parentHeight;
+
+                return `translate(${translateX.toString()}px, ${translateY.toString()}px)`;
               }),
-              takeUntil(
-                merge(
-                  pointerup$.pipe(observeOn(animationFrameScheduler)),
-                  pointercancel$,
-                  lostpointercapture$,
-                ),
-              ),
+              filter((value): value is string => value !== null),
+              auditTime(0, animationFrameScheduler),
+              map((transformString) => {
+                el.style.transform = transformString;
+              }),
+              takeUntil(merge(pointerup$, pointercancel$, lostpointercapture$)),
               finalize(() => {
                 isDragging = false;
                 el.style.willChange = 'auto';
                 el.style.userSelect = '';
+
+                el.style.left = `${finalXPercent.toString()}%`;
+                el.style.top = `${finalYPercent.toString()}%`;
+                el.style.transform = '';
 
                 if (el.hasPointerCapture(pointerId)) {
                   el.releasePointerCapture(pointerId);
