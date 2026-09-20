@@ -7,6 +7,16 @@ import { DocViewerFacade } from '../model/doc-viewer-facade';
 import { Toolbar } from './toolbar/toolbar';
 import { TextAnnotation } from './text-annotation/text-annotation';
 
+const ZoomDirection = {
+  IN: 'in',
+  OUT: 'out',
+} as const;
+
+type ZoomDirection = (typeof ZoomDirection)[keyof typeof ZoomDirection];
+
+const ZOOM_DELAY = 200;
+const ANNOTATIONS_CLASSNAME = 'page__annotations';
+
 @Component({
   selector: 'app-doc-viewer-page',
   imports: [Toolbar, DraggableDirective, TextAnnotation],
@@ -37,19 +47,23 @@ export class DocViewer {
     });
   }
 
-  protected changeZoom(direction: 'in' | 'out'): void {
+  protected changeZoom(direction: ZoomDirection): void {
     clearTimeout(this.zoomTimeoutId);
     this.zoomTimeoutId = setTimeout(() => {
-      if (direction === 'in') {
+      if (direction === ZoomDirection.IN) {
         this.facade.zoomIn();
       } else {
         this.facade.zoomOut();
       }
-    }, 200);
+    }, ZOOM_DELAY);
   }
 
   protected promptNewAnnotationByKey(pageNumber: number, evt: KeyboardEvent): void {
     if (evt.key !== Key.ENTER && evt.key !== Key.SPACE) {
+      return;
+    }
+
+    if (!(evt.target as HTMLElement).classList.contains(ANNOTATIONS_CLASSNAME)) {
       return;
     }
 
@@ -58,7 +72,7 @@ export class DocViewer {
   }
 
   protected promptNewAnnotation(pageNumber: number, evt: Event): void {
-    if ((evt.target as HTMLElement).classList.contains('page__annotations')) {
+    if ((evt.target as HTMLElement).classList.contains(ANNOTATIONS_CLASSNAME)) {
       const text = prompt('Введите текст аннотации:');
       if (text?.trim()) {
         this.facade.addTextAnnotation(pageNumber, text.trim());

@@ -125,8 +125,24 @@ export class DraggableDirective implements OnInit {
     fromEvent<KeyboardEvent>(el, 'keydown')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((evt) => {
+        if (this.isEditableTarget(evt.target)) {
+          return;
+        }
         this.moveByKey(el, evt);
       });
+  }
+
+  private isEditableTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof Element)) {
+      return false;
+    }
+
+    const targetElement = target as HTMLElement;
+    return (
+      targetElement.tagName === 'INPUT' ||
+      targetElement.tagName === 'TEXTAREA' ||
+      targetElement.isContentEditable
+    );
   }
 
   private moveByKey(el: HTMLElement, evt: KeyboardEvent): void {
