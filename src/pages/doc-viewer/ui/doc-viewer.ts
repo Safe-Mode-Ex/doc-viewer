@@ -1,25 +1,18 @@
-import { Component, inject, signal, resource, effect } from '@angular/core';
+import { Component, inject, signal, resource, effect, computed } from '@angular/core';
+import { NgOptimizedImage } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '@shared/api';
-import { DraggableDirective } from '@shared/lib';
-import { Key } from '@shared/lib/keyboard/enums';
+import { DraggableDirective, probeImageSize, Key } from '@shared/lib';
 import { DocViewerFacade } from '../model/doc-viewer-facade';
 import { Toolbar } from './toolbar/toolbar';
 import { TextAnnotation } from './text-annotation/text-annotation';
 
-const ZoomDirection = {
-  IN: 'in',
-  OUT: 'out',
-} as const;
-
-type ZoomDirection = (typeof ZoomDirection)[keyof typeof ZoomDirection];
-
-const ZOOM_DELAY = 200;
 const ANNOTATIONS_CLASSNAME = 'page__annotations';
+const A4_PAGE_RATIO = '210 / 297';
 
 @Component({
   selector: 'app-doc-viewer-page',
-  imports: [Toolbar, DraggableDirective, TextAnnotation],
+  imports: [Toolbar, DraggableDirective, TextAnnotation, NgOptimizedImage],
   providers: [DocViewerFacade],
   templateUrl: './doc-viewer.html',
   styleUrls: ['./doc-viewer.scss'],
@@ -29,9 +22,16 @@ export class DocViewer {
   protected readonly facade = inject(DocViewerFacade);
   private readonly apiService = inject(ApiService);
 
-  private zoomTimeoutId = 0;
-
   protected readonly documentId = signal<string>(this.route.snapshot.paramMap.get('id') ?? '1');
+  protected readonly pageRatio = signal<string>(A4_PAGE_RATIO);
+  protected readonly pages = computed(() =>
+    this.facade.pages().map((page) => ({
+      ...page,
+      label: `Страница ${page.number.toString()}`,
+      imageAlt: `Изображение страницы ${page.number.toString()}`,
+      annotationsLabel: `Аннотации к странице ${page.number.toString()}`,
+    })),
+  );
 
   protected readonly documentLoader = resource({
     params: () => ({ id: this.documentId() }),
@@ -41,21 +41,18 @@ export class DocViewer {
   public constructor() {
     effect(() => {
       const doc = this.documentLoader.value();
+
       if (doc) {
         this.facade.initializeDocument(doc.name, doc.pages);
+        const firstImageUrl = doc.pages[0]?.imageUrl;
+
+        if (firstImageUrl) {
+          void probeImageSize(firstImageUrl).then(({ width, height }) => {
+            this.pageRatio.set(`${String(width)} / ${String(height)}`);
+          });
+        }
       }
     });
-  }
-
-  protected changeZoom(direction: ZoomDirection): void {
-    clearTimeout(this.zoomTimeoutId);
-    this.zoomTimeoutId = setTimeout(() => {
-      if (direction === ZoomDirection.IN) {
-        this.facade.zoomIn();
-      } else {
-        this.facade.zoomOut();
-      }
-    }, ZOOM_DELAY);
   }
 
   protected promptNewAnnotationByKey(pageNumber: number, evt: KeyboardEvent): void {

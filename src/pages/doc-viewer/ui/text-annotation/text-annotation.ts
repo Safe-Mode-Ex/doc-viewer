@@ -53,13 +53,16 @@ export class TextAnnotation {
   }
 
   protected onKeyDown(evt: KeyboardEvent): void {
+    evt.stopPropagation();
+
+    if (isEscKey(evt.key)) {
+      this.isEditing.set(false);
+      return;
+    }
+
     if (isEnterKey(evt.key)) {
-      evt.stopPropagation();
       evt.preventDefault();
       this.saveEdit();
-    } else if (isEscKey(evt.key)) {
-      evt.stopPropagation();
-      this.isEditing.set(false);
     }
   }
 
