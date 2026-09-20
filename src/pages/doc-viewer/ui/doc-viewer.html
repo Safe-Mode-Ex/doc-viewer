@@ -16,9 +16,20 @@
   <main class="viewer__viewport" role="document" aria-label="Просмотрщик документа">
     <div class="viewer__document document">
       <div class="document__container" [style.width.%]="facade.zoom()">
-        @for (page of pages(); track page.imageUrl) {
-        <section class="document__page page" [attr.aria-label]="page.label">
-          <img [src]="page.imageUrl" [attr.alt]="page.imageAlt" class="page__image" />
+        @for (page of pages(); track page.imageUrl;) {
+        <section
+          class="document__page page"
+          [style.aspect-ratio]="pageRatio()"
+          [attr.aria-label]="page.label"
+        >
+          <img
+            class="page__image"
+            [ngSrc]="page.imageUrl"
+            [attr.alt]="page.imageAlt"
+            [priority]="page.number === 1"
+            sizes="100vw"
+            fill
+          />
           <div
             class="page__annotations"
             (click)="promptNewAnnotation(page.number, $event)"
@@ -27,8 +38,9 @@
             tabindex="0"
             [attr.aria-label]="page.annotationsLabel"
           >
-            @for (annotation of facade.annotations(); track annotation.id) { @if
-            (annotation.pageNumber === page.number) {
+            @defer (when facade.annotations().length > 0; prefetch on idle) { @for (annotation of
+            facade.annotations(); track annotation.id) { @if (annotation.pageNumber === page.number)
+            {
             <div
               appDraggable
               (dragEnd)="facade.updateAnnotationPosition(annotation.id, $event.xPercent, $event.yPercent)"
@@ -42,7 +54,7 @@
                 (updateContent)="facade.updateAnnotationContent(annotation.id, $event)"
               ></app-text-annotation>
             </div>
-            } }
+            } } }
           </div>
         </section>
         }

@@ -1,17 +1,18 @@
 import { Component, inject, signal, resource, effect, computed } from '@angular/core';
+import { NgOptimizedImage } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '@shared/api';
-import { DraggableDirective } from '@shared/lib';
-import { Key } from '@shared/lib/keyboard/enums';
+import { DraggableDirective, probeImageSize, Key } from '@shared/lib';
 import { DocViewerFacade } from '../model/doc-viewer-facade';
 import { Toolbar } from './toolbar/toolbar';
 import { TextAnnotation } from './text-annotation/text-annotation';
 
 const ANNOTATIONS_CLASSNAME = 'page__annotations';
+const A4_PAGE_RATIO = '210 / 297';
 
 @Component({
   selector: 'app-doc-viewer-page',
-  imports: [Toolbar, DraggableDirective, TextAnnotation],
+  imports: [Toolbar, DraggableDirective, TextAnnotation, NgOptimizedImage],
   providers: [DocViewerFacade],
   templateUrl: './doc-viewer.html',
   styleUrls: ['./doc-viewer.scss'],
@@ -22,6 +23,7 @@ export class DocViewer {
   private readonly apiService = inject(ApiService);
 
   protected readonly documentId = signal<string>(this.route.snapshot.paramMap.get('id') ?? '1');
+  protected readonly pageRatio = signal<string>(A4_PAGE_RATIO);
   protected readonly pages = computed(() =>
     this.facade.pages().map((page) => ({
       ...page,
@@ -39,8 +41,16 @@ export class DocViewer {
   public constructor() {
     effect(() => {
       const doc = this.documentLoader.value();
+
       if (doc) {
         this.facade.initializeDocument(doc.name, doc.pages);
+        const firstImageUrl = doc.pages[0]?.imageUrl;
+
+        if (firstImageUrl) {
+          void probeImageSize(firstImageUrl).then(({ width, height }) => {
+            this.pageRatio.set(`${String(width)} / ${String(height)}`);
+          });
+        }
       }
     });
   }

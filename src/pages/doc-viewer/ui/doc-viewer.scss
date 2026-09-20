@@ -34,12 +34,13 @@
   max-width: 1024px;
 }
 
-.document__container {
-  position: relative;
-  margin: 0 auto;
-  margin-left: 50%;
+.document {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 
-  transform: translate(-50%);
+.document__container {
   will-change: width;
   transition: width, 0.25s;
 }
@@ -53,9 +54,8 @@
 }
 
 .page__image {
-  display: block;
-  width: 100%;
   pointer-events: none;
+  object-fit: contain;
 }
 
 .page__annotations {

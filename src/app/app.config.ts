@@ -3,9 +3,10 @@ import {
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
 } from '@angular/core';
+import { IMAGE_LOADER, ImageLoaderConfig } from '@angular/common';
 import { provideRouter } from '@angular/router';
+import { HttpClientMockService, HTTP_TOKEN } from '@shared/api';
 import { routes } from './app.routes';
-import { HttpClientMockService, HTTP_TOKEN } from '../shared/api';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -15,6 +16,10 @@ export const appConfig: ApplicationConfig = {
     {
       provide: HTTP_TOKEN,
       useClass: HttpClientMockService,
+    },
+    {
+      provide: IMAGE_LOADER,
+      useValue: (config: ImageLoaderConfig) => config.src,
     },
   ],
 };
