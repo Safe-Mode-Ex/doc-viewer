@@ -3,13 +3,20 @@ import { DOCUMENT } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { fromEvent, merge, animationFrameScheduler } from 'rxjs';
 import { map, switchMap, takeUntil, finalize, auditTime, filter } from 'rxjs/operators';
+import { Key } from '../keyboard';
 import { PIXELS_PER_STEP } from './const';
 import { clampPercent, toPercent } from './math';
 import { DragGesture } from './drag-gesture';
 import { measureElement } from './measure';
 import { DragPosition } from './types';
-import { Key } from '../keyboard/enums';
 
+/**
+ * Директива для свободного перемещения элемента внутри родителя
+ * с помощью указателя или клавиатуры.
+ *
+ * Позиция вычисляется в процентах от размеров родительского элемента
+ * и применяется через CSS-свойства `left`/`top`.
+ */
 @Directive({
   selector: '[appDraggable]',
   host: {
@@ -24,6 +31,10 @@ export class DraggableDirective implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly document = inject(DOCUMENT);
 
+  /**
+   * Испускается после завершения перемещения (перетаскиванием или клавиатурой)
+   * с итоговой позицией элемента в процентах.
+   */
   public dragEnd = output<DragPosition>();
 
   private isDragging = false;
@@ -34,6 +45,10 @@ export class DraggableDirective implements OnInit {
     this.watchKeyboardDrag(el);
   }
 
+  /**
+   * Возвращает целевой элемент и гарантирует, что его позиционирование
+   * не `static` — иначе задаёт `position: absolute`.
+   */
   private toPositionedElement(): HTMLElement {
     const el = this.elementRef.nativeElement as HTMLElement;
     const currentWindow = this.document.defaultView;
@@ -45,6 +60,7 @@ export class DraggableDirective implements OnInit {
     return el;
   }
 
+  /** @internal */
   private watchPointerDrag(el: HTMLElement): void {
     const targetBody = this.document.body;
     const pointermove$ = fromEvent<PointerEvent>(targetBody, 'pointermove');
@@ -90,6 +106,7 @@ export class DraggableDirective implements OnInit {
       .subscribe();
   }
 
+  /** @internal */
   private watchKeyboardDrag(el: HTMLElement): void {
     fromEvent<KeyboardEvent>(el, 'keydown')
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -101,6 +118,7 @@ export class DraggableDirective implements OnInit {
       });
   }
 
+  /** @internal */
   private isEditableTarget(target: EventTarget | null): boolean {
     if (!(target instanceof Element)) {
       return false;
@@ -114,6 +132,7 @@ export class DraggableDirective implements OnInit {
     );
   }
 
+  /** @internal */
   private moveByKey(el: HTMLElement, evt: KeyboardEvent): void {
     const parent = el.parentElement;
     if (!parent) return;
@@ -157,6 +176,7 @@ export class DraggableDirective implements OnInit {
     }
   }
 
+  /** @internal */
   private applyPosition(el: HTMLElement, leftPercent: number, topPercent: number): void {
     el.style.left = `${leftPercent.toString()}%`;
     el.style.top = `${topPercent.toString()}%`;
