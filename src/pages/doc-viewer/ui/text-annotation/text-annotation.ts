@@ -13,6 +13,7 @@ export class TextAnnotation {
 
   public delete = output();
   public updateContent = output<string>();
+  public editing = output<boolean>();
 
   protected readonly isEditing = signal<boolean>(false);
   protected readonly editableText = signal<string>('');
@@ -38,6 +39,7 @@ export class TextAnnotation {
     evt.stopPropagation();
     this.editableText.set(this.content());
     this.isEditing.set(true);
+    this.editing.emit(true);
   }
 
   protected saveEdit(): void {
@@ -50,6 +52,7 @@ export class TextAnnotation {
       this.updateContent.emit(trimmed);
     }
     this.isEditing.set(false);
+    this.editing.emit(false);
   }
 
   protected onKeyDown(evt: KeyboardEvent): void {
@@ -57,6 +60,7 @@ export class TextAnnotation {
 
     if (isEscKey(evt.key)) {
       this.isEditing.set(false);
+      this.editing.emit(false);
       return;
     }
 

@@ -22,6 +22,9 @@ export class DocViewer {
   protected readonly facade = inject(DocViewerFacade);
   private readonly apiService = inject(ApiService);
 
+  private readonly isEditingAnnotation = signal<boolean>(false);
+  private suppressNewPromptAfterEdit = false;
+
   protected readonly documentId = signal<string>(this.route.snapshot.paramMap.get('id') ?? '1');
   protected readonly pageRatio = signal<string>(A4_PAGE_RATIO);
   protected readonly pages = computed(() =>
@@ -55,6 +58,14 @@ export class DocViewer {
     });
   }
 
+  protected onAnnotationEditingChange(editing: boolean): void {
+    this.isEditingAnnotation.set(editing);
+  }
+
+  protected onAnnotationRegionMousedown(): void {
+    this.suppressNewPromptAfterEdit = this.isEditingAnnotation();
+  }
+
   protected promptNewAnnotationByKey(pageNumber: number, evt: KeyboardEvent): void {
     if (evt.key !== Key.ENTER && evt.key !== Key.SPACE) {
       return;
@@ -69,6 +80,11 @@ export class DocViewer {
   }
 
   protected promptNewAnnotation(pageNumber: number, evt: Event): void {
+    if (this.suppressNewPromptAfterEdit) {
+      this.suppressNewPromptAfterEdit = false;
+      return;
+    }
+
     if ((evt.target as HTMLElement).classList.contains(ANNOTATIONS_CLASSNAME)) {
       const text = prompt('Введите текст аннотации:');
       if (text?.trim()) {
