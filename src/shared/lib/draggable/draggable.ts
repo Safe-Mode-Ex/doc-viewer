@@ -3,8 +3,12 @@ import { DOCUMENT } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { fromEvent, merge, animationFrameScheduler } from 'rxjs';
 import { map, switchMap, takeUntil, finalize, auditTime, filter } from 'rxjs/operators';
-import { DRAG_THRESHOLD_PX, PIXELS_PER_STEP } from './const';
+import { PIXELS_PER_STEP } from './const';
+import { clampPercent, toPercent } from './math';
+import { DragGesture } from './drag-gesture';
+import { measureElement } from './measure';
 import { DragPosition } from './types';
+import { Key } from '../keyboard/enums';
 
 @Directive({
   selector: '[appDraggable]',
@@ -22,193 +26,140 @@ export class DraggableDirective implements OnInit {
 
   public dragEnd = output<DragPosition>();
 
+  private isDragging = false;
+
   public ngOnInit(): void {
+    const el = this.toPositionedElement();
+    this.watchPointerDrag(el);
+    this.watchKeyboardDrag(el);
+  }
+
+  private toPositionedElement(): HTMLElement {
     const el = this.elementRef.nativeElement as HTMLElement;
-
     const currentWindow = this.document.defaultView;
-    const targetBody = this.document.body;
 
-    if (currentWindow) {
-      const computedStyle = currentWindow.getComputedStyle(el);
-      if (computedStyle.position === 'static') {
-        el.style.position = 'absolute';
-      }
+    if (currentWindow?.getComputedStyle(el).position === 'static') {
+      el.style.position = 'absolute';
     }
 
-    let isDragging = false;
+    return el;
+  }
 
-    const pointerdown$ = fromEvent<PointerEvent>(el, 'pointerdown');
+  private watchPointerDrag(el: HTMLElement): void {
+    const targetBody = this.document.body;
     const pointermove$ = fromEvent<PointerEvent>(targetBody, 'pointermove');
     const pointerup$ = fromEvent<PointerEvent>(targetBody, 'pointerup');
     const pointercancel$ = fromEvent<PointerEvent>(targetBody, 'pointercancel');
     const lostpointercapture$ = fromEvent<PointerEvent>(el, 'lostpointercapture');
 
-    pointerdown$
+    fromEvent<PointerEvent>(el, 'pointerdown')
       .pipe(
-        filter(() => !isDragging),
-        map((startEvent) => {
-          const parent = el.parentElement;
-          const parentRect = parent?.getBoundingClientRect();
-          const parentWidth = parentRect?.width ?? 1;
-          const parentHeight = parentRect?.height ?? 1;
+        filter(() => !this.isDragging),
+        map((startEvent) => ({
+          startX: startEvent.clientX,
+          startY: startEvent.clientY,
+          pointerId: startEvent.pointerId,
+        })),
+        switchMap(({ startX, startY, pointerId }) => {
+          const gesture = DragGesture.create(el, startX, startY, pointerId, () => {
+            gesture.start(el);
+            this.isDragging = true;
+          });
 
-          const currentRect = el.getBoundingClientRect();
-          const initialLeftPercent = parentRect
-            ? ((currentRect.left - parentRect.left) / parentWidth) * 100
-            : 0;
-          const initialTopPercent = parentRect
-            ? ((currentRect.top - parentRect.top) / parentHeight) * 100
-            : 0;
+          return pointermove$.pipe(
+            map((moveEvent) => gesture.toTransform(moveEvent.clientX, moveEvent.clientY)),
+            filter((value): value is string => value !== null),
+            auditTime(0, animationFrameScheduler),
+            map((transformString) => {
+              el.style.transform = transformString;
+            }),
+            takeUntil(merge(pointerup$, pointercancel$, lostpointercapture$)),
+            finalize(() => {
+              gesture.finish(el);
+              this.isDragging = false;
 
-          const elementWidthPercent = (el.offsetWidth / parentWidth) * 100;
-          const elementHeightPercent = (el.offsetHeight / parentHeight) * 100;
-
-          return {
-            startX: startEvent.clientX,
-            startY: startEvent.clientY,
-            initialLeftPercent,
-            initialTopPercent,
-            parentWidth,
-            parentHeight,
-            elementWidthPercent,
-            elementHeightPercent,
-            pointerId: startEvent.pointerId,
-          };
-        }),
-        switchMap(
-          ({
-            startX,
-            startY,
-            initialLeftPercent,
-            initialTopPercent,
-            parentWidth,
-            parentHeight,
-            elementWidthPercent,
-            elementHeightPercent,
-            pointerId,
-          }) => {
-            let finalXPercent = initialLeftPercent;
-            let finalYPercent = initialTopPercent;
-            let dragStarted = false;
-
-            const startDrag = () => {
-              if (dragStarted) return;
-
-              dragStarted = true;
-              isDragging = true;
-              el.style.willChange = 'transform';
-              el.style.userSelect = 'none';
-
-              if (!el.hasPointerCapture(pointerId)) {
-                el.setPointerCapture(pointerId);
+              if (gesture.hasDragged) {
+                const { xPercent, yPercent } = gesture.position();
+                this.applyPosition(el, xPercent, yPercent);
               }
-            };
-
-            return pointermove$.pipe(
-              map((moveEvent) => {
-                const deltaXPixels = moveEvent.clientX - startX;
-                const deltaYPixels = moveEvent.clientY - startY;
-
-                if (!dragStarted && Math.hypot(deltaXPixels, deltaYPixels) >= DRAG_THRESHOLD_PX) {
-                  startDrag();
-                }
-
-                if (!dragStarted) return null;
-
-                const deltaXPercent = (deltaXPixels / parentWidth) * 100;
-                const deltaYPercent = (deltaYPixels / parentHeight) * 100;
-
-                finalXPercent = Math.max(
-                  0,
-                  Math.min(100 - elementWidthPercent, initialLeftPercent + deltaXPercent),
-                );
-                finalYPercent = Math.max(
-                  0,
-                  Math.min(100 - elementHeightPercent, initialTopPercent + deltaYPercent),
-                );
-
-                const translateX = ((finalXPercent - initialLeftPercent) / 100) * parentWidth;
-                const translateY = ((finalYPercent - initialTopPercent) / 100) * parentHeight;
-
-                return `translate(${translateX.toString()}px, ${translateY.toString()}px)`;
-              }),
-              filter((value): value is string => value !== null),
-              auditTime(0, animationFrameScheduler),
-              map((transformString) => {
-                el.style.transform = transformString;
-              }),
-              takeUntil(merge(pointerup$, pointercancel$, lostpointercapture$)),
-              finalize(() => {
-                isDragging = false;
-                el.style.willChange = 'auto';
-                el.style.userSelect = '';
-
-                el.style.left = `${finalXPercent.toString()}%`;
-                el.style.top = `${finalYPercent.toString()}%`;
-                el.style.transform = '';
-
-                if (el.hasPointerCapture(pointerId)) {
-                  el.releasePointerCapture(pointerId);
-                }
-
-                if (dragStarted) {
-                  this.dragEnd.emit({ xPercent: finalXPercent, yPercent: finalYPercent });
-                }
-              }),
-            );
-          },
-        ),
+            }),
+          );
+        }),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe();
+  }
 
-    const keydown$ = fromEvent<KeyboardEvent>(el, 'keydown');
-
-    keydown$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((evt) => {
-      const parent = el.parentElement;
-      if (!parent) return;
-
-      const parentRect = parent.getBoundingClientRect();
-      const parentWidth = parentRect.width || 1;
-      const parentHeight = parentRect.height || 1;
-
-      const currentRect = el.getBoundingClientRect();
-      const currentLeftPercent = ((currentRect.left - parentRect.left) / parentWidth) * 100;
-      const currentTopPercent = ((currentRect.top - parentRect.top) / parentHeight) * 100;
-
-      const elementWidthPercent = (el.offsetWidth / parentWidth) * 100;
-      const elementHeightPercent = (el.offsetHeight / parentHeight) * 100;
-
-      const stepXPercent = (PIXELS_PER_STEP / parentWidth) * 100;
-      const stepYPercent = (PIXELS_PER_STEP / parentHeight) * 100;
-
-      let newLeft = currentLeftPercent;
-      let newTop = currentTopPercent;
-
-      switch (evt.key) {
-        case 'ArrowLeft':
-          newLeft = Math.max(0, currentLeftPercent - stepXPercent);
-          break;
-        case 'ArrowRight':
-          newLeft = Math.min(100 - elementWidthPercent, currentLeftPercent + stepXPercent);
-          break;
-        case 'ArrowUp':
-          newTop = Math.max(0, currentTopPercent - stepYPercent);
-          break;
-        case 'ArrowDown':
-          newTop = Math.min(100 - elementHeightPercent, currentTopPercent + stepYPercent);
-          break;
-        default:
+  private watchKeyboardDrag(el: HTMLElement): void {
+    fromEvent<KeyboardEvent>(el, 'keydown')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((evt) => {
+        if (this.isEditableTarget(evt.target)) {
           return;
-      }
+        }
+        this.moveByKey(el, evt);
+      });
+  }
 
-      evt.preventDefault();
+  private isEditableTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof Element)) {
+      return false;
+    }
 
-      if (newLeft !== currentLeftPercent || newTop !== currentTopPercent) {
-        el.style.left = `${newLeft.toString()}%`;
-        el.style.top = `${newTop.toString()}%`;
-        this.dragEnd.emit({ xPercent: newLeft, yPercent: newTop });
-      }
-    });
+    const targetElement = target as HTMLElement;
+    return (
+      targetElement.tagName === 'INPUT' ||
+      targetElement.tagName === 'TEXTAREA' ||
+      targetElement.isContentEditable
+    );
+  }
+
+  private moveByKey(el: HTMLElement, evt: KeyboardEvent): void {
+    const parent = el.parentElement;
+    if (!parent) return;
+
+    const {
+      parentWidth,
+      parentHeight,
+      leftPercent,
+      topPercent,
+      elementWidthPercent,
+      elementHeightPercent,
+    } = measureElement(el);
+
+    const stepXPercent = toPercent(PIXELS_PER_STEP, parentWidth);
+    const stepYPercent = toPercent(PIXELS_PER_STEP, parentHeight);
+
+    let newLeft = leftPercent;
+    let newTop = topPercent;
+
+    switch (evt.key) {
+      case Key.LEFT:
+        newLeft = clampPercent(leftPercent - stepXPercent, elementWidthPercent);
+        break;
+      case Key.RIGHT:
+        newLeft = clampPercent(leftPercent + stepXPercent, elementWidthPercent);
+        break;
+      case Key.UP:
+        newTop = clampPercent(topPercent - stepYPercent, elementHeightPercent);
+        break;
+      case Key.DOWN:
+        newTop = clampPercent(topPercent + stepYPercent, elementHeightPercent);
+        break;
+      default:
+        return;
+    }
+
+    evt.preventDefault();
+
+    if (newLeft !== leftPercent || newTop !== topPercent) {
+      this.applyPosition(el, newLeft, newTop);
+    }
+  }
+
+  private applyPosition(el: HTMLElement, leftPercent: number, topPercent: number): void {
+    el.style.left = `${leftPercent.toString()}%`;
+    el.style.top = `${topPercent.toString()}%`;
+    this.dragEnd.emit({ xPercent: leftPercent, yPercent: topPercent });
   }
 }
