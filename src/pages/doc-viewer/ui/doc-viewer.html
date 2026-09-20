@@ -33,6 +33,7 @@
           <div
             class="page__annotations"
             (click)="promptNewAnnotation(page.number, $event)"
+            (mousedown)="onAnnotationRegionMousedown()"
             (keydown)="promptNewAnnotationByKey(page.number, $event)"
             role="region"
             tabindex="0"
@@ -52,6 +53,7 @@
                 [content]="annotation.content"
                 (delete)="facade.deleteAnnotation(annotation.id)"
                 (updateContent)="facade.updateAnnotationContent(annotation.id, $event)"
+                (editing)="onAnnotationEditingChange($event)"
               ></app-text-annotation>
             </div>
             } } }
