@@ -1,4 +1,4 @@
-import { clampPercent, percentToPixels, toPercent } from './math';
+import { clampPercent, percentToPixels, toPercent } from '../math';
 
 describe('clampPercent', () => {
   it('keeps value inside range', () => {
