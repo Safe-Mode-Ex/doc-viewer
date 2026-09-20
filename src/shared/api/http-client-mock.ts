@@ -3,6 +3,11 @@ import { HttpClient } from './http-token';
 
 const API_FAKE_DELAY = 300;
 
+/**
+ * Реализация {@link HttpClient}, имитирующая сервер: возвращает данные
+ * из локального JSON-файла с искусственной сетевой задержкой.
+ * Используется в среде разработки, где реальный API недоступен.
+ */
 @Service()
 export class HttpClientMockService implements HttpClient {
   /**

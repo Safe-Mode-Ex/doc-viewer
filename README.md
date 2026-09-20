@@ -1,59 +1,56 @@
-# DocViewer
+## Запуск проекта
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.8.
+Переменные окружения: отсутствуют. Проект их не читает; данные всегда берутся из мок-HTTP-клиента `HttpClientMockService`.
 
-## Development server
+Зависимости: менеджер пакетов зафиксирован как `npm@11.19.0`. Runtime-зависимости: Angular `22.1.0` (common, compiler, core, forms, platform-browser, router), `rxjs 7.8.0`, `tslib 2.3.0`. Dev-зависимости: `@angular/build 22.1.8`, `@angular/cli 22.1.8`, `typescript 6.0.2`, `vitest 4.0.8`. Проверено на `node v24.21.0` и `npm 11.19.0`.
 
-To start a local development server, run:
-
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Установка:
 
 ```bash
-ng generate component component-name
+npm ci
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Dev-сервер:
 
 ```bash
-ng generate --help
+npm start
 ```
 
-## Building
+Запускает `ng serve` в конфигурации `development`, адрес по умолчанию `http://localhost:4200/`. Маршруты: `viewer/view/:id` открывает компонент `DocViewer`; любой другой путь перенаправляется на `viewer/view/1`.
 
-To build the project run:
+Прочие команды: `npm run build` (сборка, артефакты в `dist/`), `npm test` (юнит-тесты на Vitest), `npm run lint` (eslint по файлам `.ts` и `.html`).
 
-```bash
-ng build
-```
+## Архитектура интеграции
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Поток данных от API до компонента:
 
-## Running unit tests
+1. Параметр маршрута `:id` читается один раз из snapshot-параметров `ActivatedRoute`; при отсутствии используется `'1'`.
+2. `resource documentLoader` при изменении id вызывает `ApiService.getDocumentById(id)`.
+3. `ApiService.getDocumentById(id)` выполняет `http.get<Document>('/api/v1/documents/${id}')`, где `http` — реализация интерфейса `HttpClient`, полученная через токен `HTTP_TOKEN`.
+4. В корне инжекции `HTTP_TOKEN` связан с `HttpClientMockService`; реального HTTP-клиента нет.
+5. Мок ждет 300 мс, затем для URL, содержащего `/documents/`, возвращает документ из локального JSON-файла; для остальных URL выбрасывает ошибку вида `Mock HTTP Client: 404 ... Not Found`.
+6. Когда загрузка завершена и ошибок нет, эффект инициализирует состояние через `DocViewerFacade.initializeDocument(doc.name, doc.pages)` и через `probeImageSize` загружает первое изображение страницы, устанавливая пропорцию страницы по реальным размерам (изначально `210 / 297`).
+7. `DocViewerFacade` хранит состояние `ViewerState` в signal-е: имя документа, страницы, масштаб (стартовое значение 100), аннотации (стартовый пустой список); наружу отдает только computed-значения.
+8. Компонент `DocViewer` маппит страницы в подписи (label, alt, aria-label), рендерит тулбар (имя документа, масштаб, кнопки `+`, `-`, «Сохранить»), изображение страницы и аннотации, отфильтрованные по номеру страницы; блок аннотаций подключается через `@defer`, как только появляется хотя бы одна аннотация.
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Внешние зависимости с лимитами
 
-```bash
-ng test
-```
+- Сетевой бэкенд отсутствует: документ — локальный JSON `test doc` с 5 страницами, картинки — локальные файлы (`/pages/1.png` … `/pages/5.png`, размеры 72–132 КБ).
+- Искусственная задержка мока: 300 мс.
+- `IMAGE_LOADER` возвращает исходный `src` без изменений: оптимизации изображений и CDN нет.
+- Бюджеты сборки (production): initial bundle — предупреждение от 500 КБ, ошибка от 1 МБ; стили компонента — предупреждение от 4 КБ, ошибка от 8 КБ.
+- Масштаб ограничен диапазоном 50–200%, шаг 10%: увеличение — до 200, уменьшение — до 50; ширина контейнера страницы в процентах равна текущему значению масштаба.
+- Браузерные API, используемые напрямую: `window.prompt`, `crypto.randomUUID`, конструктор `Image`.
+- Пакетный менеджер и рантайм: установка строго по lock-файлу через `npm ci`; зафиксирован `npm@11.19.0`.
 
-## Running end-to-end tests
+## Известные ограничения
 
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- Параметр `:id` не влияет на содержимое: мок возвращает один и тот же документ для любого URL с подстрокой `/documents/`; ошибка 404 выбрасывается только для URL без этой подстроки.
+- id читается только из snapshot маршрута: смена `:id` без пересоздания компонента не запускает повторную загрузку.
+- Аннотации хранятся только в памяти: инициализация документа очищает список аннотаций, перезагрузка страницы удаляет их все.
+- «Сохранить» только печатает JSON (имя документа, число аннотаций, метка времени, аннотации) в консоль; записи на сервер или в файл нет.
+- Новая аннотация всегда создается с типом `text`, позицией 35% / 20% и id через `crypto.randomUUID()`; в окружении без `crypto.randomUUID` создание падает.
+- `probeImageSize` не имеет таймаута и кэша; при ошибке загрузки картинки пропорция страницы остается по умолчанию `210 / 297`.
+- Создание аннотации использует блокирующий вызов `prompt`; отмена ввода и текст из одних пробелов аннотацию не создают.
+- При редактировании нельзя удалить текст аннотации: если ввод пуст или не изменился, новое содержимое не применяется.
+- Клавиатурное создание аннотаций работает только для Enter и Space и только когда фокус находится на области аннотаций страницы; клик вне этой области игнорируется.
