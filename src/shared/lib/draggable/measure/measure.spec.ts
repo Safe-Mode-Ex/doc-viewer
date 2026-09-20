@@ -22,7 +22,7 @@ function makeElement(): HTMLElement {
 }
 
 describe('measureElement', () => {
-  it('computes metrics from element and parent rects', () => {
+  it('should compute metrics from element and parent rects', () => {
     expect(measureElement(makeElement())).toEqual({
       parentWidth: 200,
       parentHeight: 200,
@@ -33,7 +33,7 @@ describe('measureElement', () => {
     });
   });
 
-  it('falls back to sized one and zero position without a parent', () => {
+  it('should fall back to sized one and zero position without a parent', () => {
     const el = {
       parentElement: null,
       offsetWidth: 40,

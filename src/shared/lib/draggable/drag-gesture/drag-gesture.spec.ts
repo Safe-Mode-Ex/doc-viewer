@@ -38,7 +38,7 @@ function makeElement(hasCapture = false): {
 }
 
 describe('DragGesture.toTransform', () => {
-  it('returns null below the drag threshold and does not start', () => {
+  it('should return null below the drag threshold and not start', () => {
     const { el } = makeElement();
     const onStart = vi.fn();
     const gesture = DragGesture.create(el, 100, 100, 1, onStart);
@@ -48,7 +48,7 @@ describe('DragGesture.toTransform', () => {
     expect(onStart).not.toHaveBeenCalled();
   });
 
-  it('starts once at the threshold and returns a translate string', () => {
+  it('should start once at the threshold and return a translate string', () => {
     const { el } = makeElement();
     const onStart = vi.fn();
     const gesture = DragGesture.create(el, 100, 100, 1, onStart);
@@ -61,7 +61,7 @@ describe('DragGesture.toTransform', () => {
     expect(onStart).toHaveBeenCalledTimes(1);
   });
 
-  it('clamps the final position and transform at the edges', () => {
+  it('should clamp the final position and transform at the edges', () => {
     const { el } = makeElement();
     const gesture = DragGesture.create(el, 100, 100, 1);
 
@@ -69,7 +69,7 @@ describe('DragGesture.toTransform', () => {
     expect(gesture.position()).toEqual({ xPercent: 80, yPercent: 90 });
   });
 
-  it('tracks the final position across moves', () => {
+  it('should track the final position across moves', () => {
     const { el } = makeElement();
     const gesture = DragGesture.create(el, 100, 100, 1);
 
@@ -81,7 +81,7 @@ describe('DragGesture.toTransform', () => {
 });
 
 describe('DragGesture.start / finish', () => {
-  it('applies styles and captures the pointer on start', () => {
+  it('should apply styles and capture the pointer on start', () => {
     const { el, setPointerCapture } = makeElement(false);
     const gesture = DragGesture.create(el, 100, 100, 1);
 
@@ -92,7 +92,7 @@ describe('DragGesture.start / finish', () => {
     expect(setPointerCapture).toHaveBeenCalledWith(1);
   });
 
-  it('does not capture when the pointer is already captured', () => {
+  it('should not capture when the pointer is already captured', () => {
     const { el, setPointerCapture } = makeElement(true);
     const gesture = DragGesture.create(el, 100, 100, 1);
 
@@ -101,7 +101,7 @@ describe('DragGesture.start / finish', () => {
     expect(setPointerCapture).not.toHaveBeenCalled();
   });
 
-  it('resets styles and releases the pointer on finish', () => {
+  it('should reset styles and release the pointer on finish', () => {
     const { el, releasePointerCapture } = makeElement(true);
     const gesture = DragGesture.create(el, 100, 100, 1);
 
