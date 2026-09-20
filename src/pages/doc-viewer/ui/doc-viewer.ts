@@ -2,6 +2,7 @@ import { Component, inject, signal, resource, effect } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '@shared/api';
 import { DraggableDirective } from '@shared/lib';
+import { Key } from '@shared/lib/keyboard/enums';
 import { DocViewerFacade } from '../model/doc-viewer-facade';
 import { Toolbar } from './toolbar/toolbar';
 import { TextAnnotation } from './text-annotation/text-annotation';
@@ -13,7 +14,7 @@ import { TextAnnotation } from './text-annotation/text-annotation';
   templateUrl: './doc-viewer.html',
   styleUrls: ['./doc-viewer.scss'],
 })
-export class DocViewerPage {
+export class DocViewer {
   private readonly route = inject(ActivatedRoute);
   protected readonly facade = inject(DocViewerFacade);
   private readonly apiService = inject(ApiService);
@@ -47,7 +48,16 @@ export class DocViewerPage {
     }, 200);
   }
 
-  protected promptNewAnnotation(pageNumber: number, evt: MouseEvent): void {
+  protected promptNewAnnotationByKey(pageNumber: number, evt: KeyboardEvent): void {
+    if (evt.key !== Key.ENTER && evt.key !== Key.SPACE) {
+      return;
+    }
+
+    evt.preventDefault();
+    this.promptNewAnnotation(pageNumber, evt);
+  }
+
+  protected promptNewAnnotation(pageNumber: number, evt: Event): void {
     if ((evt.target as HTMLElement).classList.contains('page__annotations')) {
       const text = prompt('Введите текст аннотации:');
       if (text?.trim()) {

@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { fromEvent, merge, animationFrameScheduler } from 'rxjs';
 import { map, switchMap, takeUntil, finalize, auditTime, filter } from 'rxjs/operators';
 import { DRAG_THRESHOLD_PX, PIXELS_PER_STEP } from './const';
+import { clampPercent, toPercent, percentToPixels } from './math';
 import { DragPosition, DragMetrics } from './types';
 import { Key } from '../keyboard/enums';
 
@@ -89,14 +90,14 @@ export class DraggableDirective implements OnInit {
 
               if (!dragStarted) return null;
 
-              const deltaXPercent = this.toPercent(deltaXPixels, parentWidth);
-              const deltaYPercent = this.toPercent(deltaYPixels, parentHeight);
+              const deltaXPercent = toPercent(deltaXPixels, parentWidth);
+              const deltaYPercent = toPercent(deltaYPixels, parentHeight);
 
-              finalXPercent = this.clampPercent(leftPercent + deltaXPercent, elementWidthPercent);
-              finalYPercent = this.clampPercent(topPercent + deltaYPercent, elementHeightPercent);
+              finalXPercent = clampPercent(leftPercent + deltaXPercent, elementWidthPercent);
+              finalYPercent = clampPercent(topPercent + deltaYPercent, elementHeightPercent);
 
-              const translateX = this.percentToPixels(finalXPercent - leftPercent, parentWidth);
-              const translateY = this.percentToPixels(finalYPercent - topPercent, parentHeight);
+              const translateX = percentToPixels(finalXPercent - leftPercent, parentWidth);
+              const translateY = percentToPixels(finalYPercent - topPercent, parentHeight);
 
               return `translate(${translateX.toString()}px, ${translateY.toString()}px)`;
             }),
@@ -141,24 +142,24 @@ export class DraggableDirective implements OnInit {
       elementHeightPercent,
     } = this.measure(el);
 
-    const stepXPercent = this.toPercent(PIXELS_PER_STEP, parentWidth);
-    const stepYPercent = this.toPercent(PIXELS_PER_STEP, parentHeight);
+    const stepXPercent = toPercent(PIXELS_PER_STEP, parentWidth);
+    const stepYPercent = toPercent(PIXELS_PER_STEP, parentHeight);
 
     let newLeft = leftPercent;
     let newTop = topPercent;
 
     switch (evt.key) {
       case Key.LEFT:
-        newLeft = this.clampPercent(leftPercent - stepXPercent, elementWidthPercent);
+        newLeft = clampPercent(leftPercent - stepXPercent, elementWidthPercent);
         break;
       case Key.RIGHT:
-        newLeft = this.clampPercent(leftPercent + stepXPercent, elementWidthPercent);
+        newLeft = clampPercent(leftPercent + stepXPercent, elementWidthPercent);
         break;
       case Key.UP:
-        newTop = this.clampPercent(topPercent - stepYPercent, elementHeightPercent);
+        newTop = clampPercent(topPercent - stepYPercent, elementHeightPercent);
         break;
       case Key.DOWN:
-        newTop = this.clampPercent(topPercent + stepYPercent, elementHeightPercent);
+        newTop = clampPercent(topPercent + stepYPercent, elementHeightPercent);
         break;
       default:
         return;
@@ -179,10 +180,10 @@ export class DraggableDirective implements OnInit {
 
     const currentRect = el.getBoundingClientRect();
     const leftPercent = parentRect
-      ? this.toPercent(currentRect.left - parentRect.left, parentWidth)
+      ? toPercent(currentRect.left - parentRect.left, parentWidth)
       : 0;
     const topPercent = parentRect
-      ? this.toPercent(currentRect.top - parentRect.top, parentHeight)
+      ? toPercent(currentRect.top - parentRect.top, parentHeight)
       : 0;
 
     return {
@@ -190,21 +191,9 @@ export class DraggableDirective implements OnInit {
       parentHeight,
       leftPercent,
       topPercent,
-      elementWidthPercent: this.toPercent(el.offsetWidth, parentWidth),
-      elementHeightPercent: this.toPercent(el.offsetHeight, parentHeight),
+      elementWidthPercent: toPercent(el.offsetWidth, parentWidth),
+      elementHeightPercent: toPercent(el.offsetHeight, parentHeight),
     };
-  }
-
-  private clampPercent(value: number, elementSizePercent: number): number {
-    return Math.max(0, Math.min(100 - elementSizePercent, value));
-  }
-
-  private toPercent(pixels: number, size: number): number {
-    return (pixels / size) * 100;
-  }
-
-  private percentToPixels(percent: number, size: number): number {
-    return (percent / 100) * size;
   }
 
   private startPointerDrag(el: HTMLElement, pointerId: number): void {

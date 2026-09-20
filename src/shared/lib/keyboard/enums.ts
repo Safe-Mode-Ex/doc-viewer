@@ -1,6 +1,7 @@
 export const Key = {
   ENTER: 'Enter',
   ESC: 'Escape',
+  SPACE: ' ',
   LEFT: 'ArrowLeft',
   RIGHT: 'ArrowRight',
   UP: 'ArrowUp',

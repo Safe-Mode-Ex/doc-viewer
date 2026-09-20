@@ -4,10 +4,6 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "types": [],
-    "paths": {
-      "@shared/*": ["./src/shared/*"],
-      "@pages/*": ["./src/pages/*"],
-    },
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
   },

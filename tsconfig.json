@@ -13,6 +13,10 @@
     "importHelpers": true,
     "target": "ES2022",
     "module": "preserve",
+    "paths": {
+      "@shared/*": ["./src/shared/*"],
+      "@pages/*": ["./src/pages/*"],
+    },
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
