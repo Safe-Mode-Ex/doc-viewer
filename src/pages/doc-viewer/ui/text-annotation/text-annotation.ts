@@ -9,6 +9,9 @@ import { isEnterKey, isEscKey } from '@shared/lib';
   styleUrls: ['./text-annotation.scss'],
 })
 export class TextAnnotation {
+  private static readonly DOUBLE_TAP_DELAY_MS = 300;
+  private static readonly DOUBLE_TAP_DISTANCE_PX = 12;
+
   public content = input.required<string>();
 
   public delete = output();
@@ -19,6 +22,10 @@ export class TextAnnotation {
   protected readonly editableText = signal<string>('');
 
   private readonly editInput = viewChild<ElementRef<HTMLInputElement>>('editInput');
+
+  private lastTapAt = 0;
+  private lastTapX = 0;
+  private lastTapY = 0;
 
   public constructor() {
     effect(() => {
@@ -40,6 +47,23 @@ export class TextAnnotation {
     this.editableText.set(this.content());
     this.isEditing.set(true);
     this.editing.emit(true);
+  }
+
+  protected onTap(evt: MouseEvent): void {
+    const now = performance.now();
+    const isDoubleTap =
+      now - this.lastTapAt <= TextAnnotation.DOUBLE_TAP_DELAY_MS &&
+      Math.hypot(evt.clientX - this.lastTapX, evt.clientY - this.lastTapY) <=
+        TextAnnotation.DOUBLE_TAP_DISTANCE_PX;
+
+    this.lastTapAt = now;
+    this.lastTapX = evt.clientX;
+    this.lastTapY = evt.clientY;
+
+    if (isDoubleTap) {
+      this.lastTapAt = 0;
+      this.startEdit(evt);
+    }
   }
 
   protected saveEdit(): void {
@@ -72,6 +96,7 @@ export class TextAnnotation {
 
   protected onDeleteClick(evt: Event): void {
     evt.preventDefault();
+    evt.stopPropagation();
     this.delete.emit();
   }
 }

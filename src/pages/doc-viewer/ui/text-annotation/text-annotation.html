@@ -4,6 +4,7 @@
   role="note"
   aria-label="Текстовая аннотация"
   tabindex="0"
+  (click)="onTap($event)"
   (keydown.enter)="startEdit($event)"
 >
   @if (isEditing()) {
@@ -18,11 +19,7 @@
     aria-label="Редактирование текста аннотации"
   />
   } @else {
-  <div
-    class="annotation__content"
-    (dblclick)="startEdit($event)"
-    title="Дважды кликните для редактирования"
-  >
+  <div class="annotation__content" title="Двойное касание или двойной клик для редактирования">
     {{ content() }}
   </div>
   }

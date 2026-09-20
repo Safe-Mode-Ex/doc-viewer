@@ -9,6 +9,7 @@
   background-color: #fffbcc;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   user-select: none;
+  touch-action: none;
 
   &:focus-visible {
     outline: 2px solid #008080;
@@ -64,6 +65,7 @@
     color: #ffffff;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
     opacity: 0.8;
+    touch-action: none;
 
     &:hover {
       opacity: 1;

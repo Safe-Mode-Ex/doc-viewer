@@ -62,25 +62,24 @@ export class DraggableDirective implements OnInit {
 
   /** @internal */
   private watchPointerDrag(el: HTMLElement): void {
-    const targetBody = this.document.body;
-    const pointermove$ = fromEvent<PointerEvent>(targetBody, 'pointermove');
-    const pointerup$ = fromEvent<PointerEvent>(targetBody, 'pointerup');
-    const pointercancel$ = fromEvent<PointerEvent>(targetBody, 'pointercancel');
+    const pointermove$ = fromEvent<PointerEvent>(el, 'pointermove');
+    const pointerup$ = fromEvent<PointerEvent>(el, 'pointerup');
+    const pointercancel$ = fromEvent<PointerEvent>(el, 'pointercancel');
     const lostpointercapture$ = fromEvent<PointerEvent>(el, 'lostpointercapture');
 
     fromEvent<PointerEvent>(el, 'pointerdown')
       .pipe(
         filter(() => !this.isDragging),
-        map((startEvent) => ({
-          startX: startEvent.clientX,
-          startY: startEvent.clientY,
-          pointerId: startEvent.pointerId,
-        })),
-        switchMap(({ startX, startY, pointerId }) => {
-          const gesture = DragGesture.create(el, startX, startY, pointerId, () => {
-            gesture.start(el);
-            this.isDragging = true;
-          });
+        switchMap((startEvent) => {
+          const gesture = DragGesture.create(
+            el,
+            startEvent.clientX,
+            startEvent.clientY,
+            startEvent.pointerId,
+          );
+
+          gesture.start(el);
+          this.isDragging = true;
 
           return pointermove$.pipe(
             map((moveEvent) => gesture.toTransform(moveEvent.clientX, moveEvent.clientY)),
