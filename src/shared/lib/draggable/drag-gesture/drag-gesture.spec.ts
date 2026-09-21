@@ -101,6 +101,36 @@ describe('DragGesture.start / finish', () => {
     expect(setPointerCapture).not.toHaveBeenCalled();
   });
 
+  it('should capture the provided capture element instead of the dragged element', () => {
+    const { el, setPointerCapture } = makeElement(false);
+    const targetSetPointerCapture = vi.fn();
+    const target = {
+      hasPointerCapture: () => false,
+      setPointerCapture: targetSetPointerCapture,
+    } as unknown as HTMLElement;
+    const gesture = DragGesture.create(el, 100, 100, 1);
+
+    gesture.start(el, target);
+
+    expect(setPointerCapture).not.toHaveBeenCalled();
+    expect(targetSetPointerCapture).toHaveBeenCalledWith(1);
+  });
+
+  it('should release the pointer from the captured element on finish', () => {
+    const { el } = makeElement(false);
+    const targetReleasePointerCapture = vi.fn();
+    const target = {
+      hasPointerCapture: () => true,
+      releasePointerCapture: targetReleasePointerCapture,
+    } as unknown as HTMLElement;
+    const gesture = DragGesture.create(el, 100, 100, 1);
+
+    gesture.start(el, target);
+    gesture.finish(el);
+
+    expect(targetReleasePointerCapture).toHaveBeenCalledWith(1);
+  });
+
   it('should reset styles and release the pointer on finish', () => {
     const { el, releasePointerCapture } = makeElement(true);
     const gesture = DragGesture.create(el, 100, 100, 1);

@@ -77,8 +77,9 @@ export class DraggableDirective implements OnInit {
             startEvent.clientY,
             startEvent.pointerId,
           );
+          const captureEl = startEvent.target instanceof Element ? startEvent.target : el;
 
-          gesture.start(el);
+          gesture.start(el, captureEl);
           this.isDragging = true;
 
           return pointermove$.pipe(
