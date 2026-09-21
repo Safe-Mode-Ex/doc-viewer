@@ -1,6 +1,12 @@
 import { Component, input, output, signal, viewChild, ElementRef, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { isEnterKey, isEscKey } from '@shared/lib';
+import { Annotation } from '@shared/model';
+import {
+  AnnotationComponent,
+  AnnotationEvent,
+  AnnotationEventKind,
+} from '../annotation/annotation-type';
 
 @Component({
   selector: 'app-text-annotation',
@@ -8,15 +14,12 @@ import { isEnterKey, isEscKey } from '@shared/lib';
   templateUrl: './text-annotation.html',
   styleUrls: ['./text-annotation.scss'],
 })
-export class TextAnnotation {
+export class TextAnnotation implements AnnotationComponent {
   private static readonly DOUBLE_TAP_DELAY_MS = 300;
   private static readonly DOUBLE_TAP_DISTANCE_PX = 12;
 
-  public content = input.required<string>();
-
-  public delete = output();
-  public updateContent = output<string>();
-  public editing = output<boolean>();
+  public readonly annotation = input.required<Annotation>();
+  public readonly events = output<AnnotationEvent>();
 
   protected readonly isEditing = signal<boolean>(false);
   protected readonly editableText = signal<string>('');
@@ -31,6 +34,7 @@ export class TextAnnotation {
     effect(() => {
       if (this.isEditing()) {
         const inputEl = this.editInput();
+
         if (inputEl) {
           inputEl.nativeElement.focus();
         }
@@ -44,9 +48,10 @@ export class TextAnnotation {
     }
 
     evt.stopPropagation();
-    this.editableText.set(this.content());
+
+    this.editableText.set(this.annotation().content);
     this.isEditing.set(true);
-    this.editing.emit(true);
+    this.events.emit({ kind: AnnotationEventKind.EDITING, editing: true });
   }
 
   protected onTap(evt: MouseEvent): void {
@@ -72,11 +77,13 @@ export class TextAnnotation {
     }
 
     const trimmed = this.editableText().trim();
-    if (trimmed && trimmed !== this.content()) {
-      this.updateContent.emit(trimmed);
+
+    if (trimmed && trimmed !== this.annotation().content) {
+      this.events.emit({ kind: AnnotationEventKind.UPDATE_CONTENT, content: trimmed });
     }
+
     this.isEditing.set(false);
-    this.editing.emit(false);
+    this.events.emit({ kind: AnnotationEventKind.EDITING, editing: false });
   }
 
   protected onKeyDown(evt: KeyboardEvent): void {
@@ -84,7 +91,7 @@ export class TextAnnotation {
 
     if (isEscKey(evt.key)) {
       this.isEditing.set(false);
-      this.editing.emit(false);
+      this.events.emit({ kind: AnnotationEventKind.EDITING, editing: false });
       return;
     }
 
@@ -97,6 +104,6 @@ export class TextAnnotation {
   protected onDeleteClick(evt: Event): void {
     evt.preventDefault();
     evt.stopPropagation();
-    this.delete.emit();
+    this.events.emit({ kind: AnnotationEventKind.DELETE });
   }
 }

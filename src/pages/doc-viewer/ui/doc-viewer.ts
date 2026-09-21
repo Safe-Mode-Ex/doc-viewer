@@ -5,14 +5,16 @@ import { ApiService } from '@shared/api';
 import { DraggableDirective, probeImageSize, Key } from '@shared/lib';
 import { DocViewerFacade } from '../model/doc-viewer-facade';
 import { Toolbar } from './toolbar/toolbar';
-import { TextAnnotation } from './text-annotation/text-annotation';
+import { AnnotationView } from './annotation/annotation-view';
+import { AnnotationEvent, AnnotationEventKind } from './annotation/annotation-type';
+import { DocumentPage } from '@shared/model';
 
 const ANNOTATIONS_CLASSNAME = 'page__annotations';
 const A4_PAGE_RATIO = '210 / 297';
 
 @Component({
   selector: 'app-doc-viewer-page',
-  imports: [Toolbar, DraggableDirective, TextAnnotation, NgOptimizedImage],
+  imports: [Toolbar, DraggableDirective, AnnotationView, NgOptimizedImage],
   providers: [DocViewerFacade],
   templateUrl: './doc-viewer.html',
   styleUrls: ['./doc-viewer.scss'],
@@ -28,12 +30,7 @@ export class DocViewer {
   protected readonly documentId = signal<string>(this.route.snapshot.paramMap.get('id') ?? '1');
   protected readonly pageRatio = signal<string>(A4_PAGE_RATIO);
   protected readonly pages = computed(() =>
-    this.facade.pages().map((page) => ({
-      ...page,
-      label: `Страница ${page.number.toString()}`,
-      imageAlt: `Изображение страницы ${page.number.toString()}`,
-      annotationsLabel: `Аннотации к странице ${page.number.toString()}`,
-    })),
+    this.facade.pages().map((page) => DocViewer.getPageAdditionalInfo(page)),
   );
 
   protected readonly documentLoader = resource({
@@ -66,6 +63,16 @@ export class DocViewer {
     this.isEditingAnnotation.set(editing);
   }
 
+  protected onAnnotationEvent(id: string, event: AnnotationEvent): void {
+    if (event.kind === AnnotationEventKind.DELETE) {
+      this.facade.deleteAnnotation(id);
+    } else if (event.kind === AnnotationEventKind.UPDATE_CONTENT) {
+      this.facade.updateAnnotationContent(id, event.content);
+    } else {
+      this.onAnnotationEditingChange(event.editing);
+    }
+  }
+
   protected onAnnotationRegionMousedown(): void {
     this.suppressNewPromptAfterEdit = this.isEditingAnnotation();
   }
@@ -95,5 +102,14 @@ export class DocViewer {
         this.facade.addTextAnnotation(pageNumber, text.trim());
       }
     }
+  }
+
+  protected static getPageAdditionalInfo(page: DocumentPage) {
+    return {
+      ...page,
+      label: `Страница ${page.number.toString()}`,
+      imageAlt: `Изображение страницы ${page.number.toString()}`,
+      annotationsLabel: `Аннотации к странице ${page.number.toString()}`,
+    };
   }
 }
