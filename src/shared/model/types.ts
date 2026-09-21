@@ -8,10 +8,16 @@ export interface Document {
   pages: DocumentPage[];
 }
 
+/**
+ * Известные типы аннотаций. Намеренная первая ступень точки расширения:
+ * реестр компонентов и fallback для неизвестных типов — ui/annotation/annotation-registry.ts.
+ */
+export type AnnotationType = 'text';
+
 export interface Annotation {
   id: string;
   pageNumber: number;
-  type: string;
+  type: AnnotationType;
   x: number;
   y: number;
   content: string;

@@ -1,5 +1,5 @@
 import { Service, computed, signal } from '@angular/core';
-import { Annotation, DocumentPage, ViewerState } from '@shared/model';
+import { Annotation, AnnotationType, DocumentPage, ViewerState } from '@shared/model';
 
 const INITIAL_STATE: ViewerState = {
   documentName: null,
@@ -40,11 +40,11 @@ export class DocViewerFacade {
     }));
   }
 
-  public addTextAnnotation(pageNumber: number, content: string): void {
+  public addAnnotation(type: AnnotationType, pageNumber: number, content: string): void {
     const newAnnotation: Annotation = {
       id: `ann_${crypto.randomUUID()}`,
       pageNumber,
-      type: 'text',
+      type,
       x: 35,
       y: 20,
       content,
@@ -54,6 +54,10 @@ export class DocViewerFacade {
       ...current,
       annotations: [...current.annotations, newAnnotation],
     }));
+  }
+
+  public addTextAnnotation(pageNumber: number, content: string): void {
+    this.addAnnotation('text', pageNumber, content);
   }
 
   public updateAnnotationPosition(id: string, xPercent: number, yPercent: number): void {

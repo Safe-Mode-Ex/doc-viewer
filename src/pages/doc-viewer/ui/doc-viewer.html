@@ -49,12 +49,10 @@
               [style.top.%]="annotation.y"
               class="draggable"
             >
-              <app-text-annotation
-                [content]="annotation.content"
-                (delete)="facade.deleteAnnotation(annotation.id)"
-                (updateContent)="facade.updateAnnotationContent(annotation.id, $event)"
-                (editing)="onAnnotationEditingChange($event)"
-              ></app-text-annotation>
+              <app-annotation-view
+                [annotation]="annotation"
+                (events)="onAnnotationEvent(annotation.id, $event)"
+              ></app-annotation-view>
             </div>
             } } }
           </div>

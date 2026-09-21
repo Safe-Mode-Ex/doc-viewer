@@ -5,14 +5,15 @@ import { ApiService } from '@shared/api';
 import { DraggableDirective, probeImageSize, Key } from '@shared/lib';
 import { DocViewerFacade } from '../model/doc-viewer-facade';
 import { Toolbar } from './toolbar/toolbar';
-import { TextAnnotation } from './text-annotation/text-annotation';
+import { AnnotationView } from './annotation/annotation-view';
+import { AnnotationEvent } from './annotation/annotation-type';
 
 const ANNOTATIONS_CLASSNAME = 'page__annotations';
 const A4_PAGE_RATIO = '210 / 297';
 
 @Component({
   selector: 'app-doc-viewer-page',
-  imports: [Toolbar, DraggableDirective, TextAnnotation, NgOptimizedImage],
+  imports: [Toolbar, DraggableDirective, AnnotationView, NgOptimizedImage],
   providers: [DocViewerFacade],
   templateUrl: './doc-viewer.html',
   styleUrls: ['./doc-viewer.scss'],
@@ -64,6 +65,16 @@ export class DocViewer {
 
   protected onAnnotationEditingChange(editing: boolean): void {
     this.isEditingAnnotation.set(editing);
+  }
+
+  protected onAnnotationEvent(id: string, event: AnnotationEvent): void {
+    if (event.kind === 'delete') {
+      this.facade.deleteAnnotation(id);
+    } else if (event.kind === 'updateContent') {
+      this.facade.updateAnnotationContent(id, event.content);
+    } else {
+      this.onAnnotationEditingChange(event.editing);
+    }
   }
 
   protected onAnnotationRegionMousedown(): void {
