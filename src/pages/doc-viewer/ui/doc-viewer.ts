@@ -6,7 +6,7 @@ import { DraggableDirective, probeImageSize, Key } from '@shared/lib';
 import { DocViewerFacade } from '../model/doc-viewer-facade';
 import { Toolbar } from './toolbar/toolbar';
 import { AnnotationView } from './annotation/annotation-view';
-import { AnnotationEvent } from './annotation/annotation-type';
+import { AnnotationEvent, AnnotationEventKind } from './annotation/annotation-type';
 
 const ANNOTATIONS_CLASSNAME = 'page__annotations';
 const A4_PAGE_RATIO = '210 / 297';
@@ -68,9 +68,9 @@ export class DocViewer {
   }
 
   protected onAnnotationEvent(id: string, event: AnnotationEvent): void {
-    if (event.kind === 'delete') {
+    if (event.kind === AnnotationEventKind.DELETE) {
       this.facade.deleteAnnotation(id);
-    } else if (event.kind === 'updateContent') {
+    } else if (event.kind === AnnotationEventKind.UPDATE_CONTENT) {
       this.facade.updateAnnotationContent(id, event.content);
     } else {
       this.onAnnotationEditingChange(event.editing);

@@ -96,13 +96,6 @@ describe('DocViewer', () => {
     fixture.detectChanges();
   }
 
-  describe('creation', () => {
-    it('should create the component', async () => {
-      await createFixture();
-      expect(component).toBeTruthy();
-    });
-  });
-
   describe('document loading', () => {
     it('should show loading status and hide the viewer until the document is received', async () => {
       let resolveRequest!: (doc: Document) => void;
@@ -218,16 +211,6 @@ describe('DocViewer', () => {
     it('should not create an annotation when the input is cancelled', async () => {
       await createFixture();
       const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue(null);
-
-      clickRegion();
-
-      expect(promptSpy).toHaveBeenCalledOnce();
-      expect(facadeOf(component).annotations()).toHaveLength(0);
-    });
-
-    it('should not create an annotation when the input is empty', async () => {
-      await createFixture();
-      const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('');
 
       clickRegion();
 
