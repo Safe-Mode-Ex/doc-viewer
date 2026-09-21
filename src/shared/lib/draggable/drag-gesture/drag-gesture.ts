@@ -13,6 +13,7 @@ export class DragGesture {
   private dragStarted = false;
   private finalXPercent: number;
   private finalYPercent: number;
+  private captureEl?: Element;
 
   private constructor(
     startX: number,
@@ -76,12 +77,13 @@ export class DragGesture {
     return `translate(${translateX.toString()}px, ${translateY.toString()}px)`;
   }
 
-  public start(el: HTMLElement): void {
+  public start(el: HTMLElement, captureEl: Element = el): void {
     el.style.willChange = 'transform';
     el.style.userSelect = 'none';
+    this.captureEl = captureEl;
 
-    if (!el.hasPointerCapture(this.pointerId)) {
-      el.setPointerCapture(this.pointerId);
+    if (!this.captureEl.hasPointerCapture(this.pointerId)) {
+      this.captureEl.setPointerCapture(this.pointerId);
     }
   }
 
@@ -90,8 +92,9 @@ export class DragGesture {
     el.style.userSelect = '';
     el.style.transform = '';
 
-    if (el.hasPointerCapture(this.pointerId)) {
-      el.releasePointerCapture(this.pointerId);
+    const captured = this.captureEl ?? el;
+    if (captured.hasPointerCapture(this.pointerId)) {
+      captured.releasePointerCapture(this.pointerId);
     }
   }
 
