@@ -65,7 +65,7 @@ describe('AnnotationView', () => {
       await flush();
 
       expect(fixture.debugElement.query(By.directive(TextAnnotation))).toBeNull();
-      expect(viewedText().textContent).toContain('Unknown annotation type');
+      expect(viewedText().textContent).toContain('Неизвестный тип аннотации');
     });
   });
 

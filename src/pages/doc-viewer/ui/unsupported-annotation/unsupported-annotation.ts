@@ -4,7 +4,7 @@ import { AnnotationComponent, AnnotationEvent } from '../annotation/annotation-t
 
 @Component({
   selector: 'app-unsupported-annotation',
-  template: '<span class="unsupported-annotation">Unknown annotation type</span>',
+  template: '<span class="unsupported-annotation">Неизвестный тип аннотации</span>',
   styles: [
     `
       .unsupported-annotation {
